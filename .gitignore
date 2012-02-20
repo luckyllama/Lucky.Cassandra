@@ -6,4 +6,4 @@
 TestResults\
 _ReSharper*
 *.vs10x
-*/packages/*
+/packages

@@ -3,6 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lucky.CassandraCache", "Lucky.CassandraCache\Lucky.CassandraCache.csproj", "{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lucky.CassandraCache.Test", "Lucky.CassandraCache.Test\Lucky.CassandraCache.Test.csproj", "{CE7F7192-D937-43DF-AEC7-31B8B2B7AB01}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9401195C-21E2-4B56-9213-E57A7EF50A54}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +21,10 @@ Global
 		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE7F7192-D937-43DF-AEC7-31B8B2B7AB01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE7F7192-D937-43DF-AEC7-31B8B2B7AB01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE7F7192-D937-43DF-AEC7-31B8B2B7AB01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE7F7192-D937-43DF-AEC7-31B8B2B7AB01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
