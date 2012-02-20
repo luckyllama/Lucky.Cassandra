@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lucky.CassandraCache", "Lucky.CassandraCache\Lucky.CassandraCache.csproj", "{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{784C4434-A3B2-4A6E-ACD3-9FE94DE8ED6C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

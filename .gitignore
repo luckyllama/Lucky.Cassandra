@@ -1,0 +1,9 @@
+*.pdb
+*/bin/*
+*/obj/*
+*.user
+*.suo
+TestResults\
+_ReSharper*
+*.vs10x
+*/packages/*
