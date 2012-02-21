@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.Caching;
-using System.Xml.Serialization;
 using Apache.Cassandra;
 using Cassandraemon;
 
@@ -88,32 +86,25 @@ namespace Lucky.Cassandra {
                     .Single(c => c.Key == "Item").Value;
                 CacheItemPolicyColumn policy = columnList.Single().ToObjectDictionary<string, CacheItemPolicyColumn>()
                     .Single(c => c.Key == "Policy").Value;
-            
-                //var item = columnList.Single(c => c.)
 
-                //if (column.Policy != null) {
-                //    if (column.Policy.SlidingExpiration is long) {
-                //        var slidingExpiration = new TimeSpan((long) column.Policy.SlidingExpiration);
-                //        if (slidingExpiration > TimeSpan.Zero) {
-                //            var lastAccessedDynamic = column.Item.LastAccessed ?? column.Item.Added;
-                //            var lastAccessed = (DateTimeOffset) lastAccessedDynamic;
-                //            if (DateTimeOffset.Now - lastAccessed > slidingExpiration) {
-                //                family.RemoveKey(key);
-                //                return null;
-                //            } else {
-                //                column.Item.LastAccessed = DateTimeOffset.Now;
-                //                db.SaveChanges();
-                //            }
-                //        }
-                //    }
-                //    if (column.Policy.AbsoluteExpiration is DateTimeOffset) {
-                //        var absoluteExpiration = (DateTimeOffset) column.Policy.AbsoluteExpiration;
-                //        if (absoluteExpiration != DateTimeOffset.MinValue && absoluteExpiration < DateTimeOffset.Now) {
-                //            family.RemoveKey(key);
-                //            return null;
-                //        }
-                //    }
-                //}
+                if (policy != null) {
+                    if (policy.SlidingExpiration > TimeSpan.Zero) {
+                        if (DateTimeOffset.Now - item.LastAccessed > policy.SlidingExpiration) {
+                            db.Column.DeleteOnSubmit(c => c.ColumnFamily == familyName && c.Key == key);
+                            db.SubmitChanges();
+                            return null;
+                        } else {
+                            item.LastAccessed = DateTimeOffset.Now;
+                            Set(key, familyName, item, policy);
+                        }
+                    }
+                    if (policy.AbsoluteExpiration != DateTimeOffset.MinValue && policy.AbsoluteExpiration < DateTimeOffset.Now) {
+                        db.Column.DeleteOnSubmit(c => c.ColumnFamily == familyName && c.Key == key);
+                        db.SubmitChanges();
+                        return null;
+                    }
+                }
+
                 return item.Value;
             }
         }
@@ -160,57 +151,46 @@ namespace Lucky.Cassandra {
             if (item.Value == null) return;
 
             var familyName = item.RegionName ?? DefaultFamilyName;
-            using (var db = CreateCassandraContext()) {
 
-                var itemColumn = new CacheItemColumn {
-                    Added = DateTimeOffset.Now, 
-                    Value = (T)item.Value
-                };
+            var itemColumn = new CacheItemColumn {
+                Added = DateTimeOffset.Now, 
+                Value = (T)item.Value
+            };
+            itemColumn.LastAccessed = itemColumn.Added;
                 
-                var policyColumn = new CacheItemPolicyColumn {
-                    SlidingExpiration = policy.SlidingExpiration,
-                    AbsoluteExpiration = policy.AbsoluteExpiration
-                };
+            var policyColumn = new CacheItemPolicyColumn {
+                SlidingExpiration = policy.SlidingExpiration,
+                AbsoluteExpiration = policy.AbsoluteExpiration
+            };
 
+            Set(item.Key, familyName, itemColumn, policyColumn);
+        }
+
+        private void Set(string key, string familyName, CacheItemColumn item, CacheItemPolicyColumn policy) {
+            using (var db = CreateCassandraContext()) {
                 var columnList = new List<SuperColumn>()
-                    .Add("Item", itemColumn)
-                    .Add("Policy", policyColumn);
+                    .Add("Item", item)
+                    .Add("Policy", policy);
 
                 var entity = new CassandraEntity<List<SuperColumn>>()
-                    .SetKey(item.Key)
+                    .SetKey(key)
                     .SetColumnFamily(familyName)
                     .SetData(columnList);
 
                 db.SuperColumnList.InsertOnSubmit(entity);
                 db.SubmitChanges();
             }
-
         }
 
         public class CacheItemColumn {
             public DateTimeOffset Added { get; set; }
             public T Value { get; set; }
+            public DateTimeOffset LastAccessed { get; set; }
         }
 
         public class CacheItemPolicyColumn {
             public TimeSpan SlidingExpiration { get; set; }
             public DateTimeOffset AbsoluteExpiration { get; set; }
-        }
-
-        private static string Serialize(object item) {
-            var serializer = new XmlSerializer(typeof (T));
-            var stream = new StringWriter();
-            serializer.Serialize(stream, item);
-            return stream.ToString();
-        }
-
-        private static object Deserialize(string serializedItem) {
-            if (string.IsNullOrWhiteSpace(serializedItem)) {
-                return null;
-            }
-            var serializer = new XmlSerializer(typeof (T));
-            var stream = new StringReader(serializedItem);
-            return serializer.Deserialize(stream);
         }
 
         public override object this[string key] {
