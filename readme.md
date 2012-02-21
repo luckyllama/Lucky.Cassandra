@@ -8,7 +8,7 @@ It's easiest to install via NuGet.
 
 Run the following command in the Package Manager Console
 
-    PM> Install-Package LuckyAssetManager
+    PM> Install-Package Lucky.Cassandra
 
 ## Example Usage
 
