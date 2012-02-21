@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package>
-	<metadata>
-		<id>Lucky.Cassandra</id>
-		<version>0.9.1</version>
-		<authors>frank hadder</authors>
-		<owners>frank hadder</owners>
-		<description>An implementation of .net 4.0's ObjectCache that saves to an instance of a Cassandra Db.</description>
-		<projectUrl>https://github.com/luckyllama/Lucky.Cassandra</projectUrl>
-		<licenseUrl>https://raw.github.com/luckyllama/Lucky.Cassandra/master/license</licenseUrl>
-		<tags>Cassandra ObjectCache Cache</tags>
-		<language>en-US</language>
-		<dependencies>
-			<dependency id="Cassandraemon" version="1.0.6" />
-		</dependencies>
-	</metadata>
-	<files>
-		<file src="Lucky.Cassandra\bin\Release\Lucky.Cassandra.*" target="lib\net40" />
-	</files>
+  <metadata>
+    <id>Lucky.Cassandra</id>
+    <version>0.9.2</version>
+    <authors>frank hadder</authors>
+    <owners>frank hadder</owners>
+    <description>An implementation of .net 4.0's ObjectCache that saves to an instance of a Cassandra Db.</description>
+    <projectUrl>https://github.com/luckyllama/Lucky.Cassandra</projectUrl>
+    <licenseUrl>https://raw.github.com/luckyllama/Lucky.Cassandra/master/license</licenseUrl>
+    <tags>Cassandra ObjectCache Cache</tags>
+    <language>en-US</language>
+    <dependencies>
+      <dependency id="Cassandraemon" version="1.0.6" />
+    </dependencies>
+    <releaseNotes>
+      Fixed an issue with the helper method CleanCache
+    </releaseNotes>
+  </metadata>
+  <files>
+    <file src="Lucky.Cassandra\bin\Release\Lucky.Cassandra.*" target="lib\net40" />
+  </files>
 </package>

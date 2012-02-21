@@ -74,6 +74,83 @@ namespace Lucky.Cassandra.Test {
             cache.Get("testKey");
         }
 
+        #region Common Tasks
+
+        private IQueryable<CassandraEntity<List<SuperColumn>>> GetSuperColumnList(CassandraContext db, string key) {
+            var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == key);
+            Assert.That(list, Is.Not.Null);
+            Assert.That(list.Any());
+            Assert.That(list.Count(), Is.EqualTo(1));
+            return list;
+        }
+
+        private void InsertCacheItem<T>(string key, T value, 
+                DateTimeOffset? added = null, DateTimeOffset? lastAccessed = null,
+                TimeSpan? slidingExpiration = null, DateTimeOffset? absoluteExpiration = null) where T : class {
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException("key");
+            if (value == null) throw new ArgumentNullException("value");
+            if (!added.HasValue) added = DateTimeOffset.Now;
+            if (!lastAccessed.HasValue) lastAccessed = DateTimeOffset.Now;
+            if (!slidingExpiration.HasValue) slidingExpiration = TimeSpan.Zero;
+            if (!absoluteExpiration.HasValue) absoluteExpiration = DateTimeOffset.Now.AddMinutes(5);
+
+            var item = new CassandraCache<T>.CacheItemColumn {
+                Added = added.Value,
+                Value = value,
+                LastAccessed = lastAccessed.Value
+            };
+
+            var policy = new CassandraCache<T>.CacheItemPolicyColumn {
+                SlidingExpiration = slidingExpiration.Value,
+                AbsoluteExpiration = absoluteExpiration.Value
+            };
+
+            using (var db = GetContext()) {
+                var columnList = new List<SuperColumn>()
+                    .Add("Item", item)
+                    .Add("Policy", policy);
+
+                var entity = new CassandraEntity<List<SuperColumn>>()
+                    .SetKey(key)
+                    .SetColumnFamily(_ColumnFamily)
+                    .SetData(columnList);
+
+                db.SuperColumnList.InsertOnSubmit(entity);
+                db.SubmitChanges();
+            }
+        }
+
+        #endregion Common Tasks
+
+        #region CleanCache
+
+        [Test]
+        public void CleanCache_NoParams_DeletesItAll() {
+            const string testKey = "SetString1";
+            var testValue = "TestString1";
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
+
+            using (var db = GetContext()) {
+                var list = GetSuperColumnList(db, testKey);
+                var itemCount = list.Single().ToObjectDictionary<string, CassandraCache<string>.CacheItemColumn>()
+                    .Count(c => c.Key == "Item");
+                Assert.That(itemCount, Is.EqualTo(1));
+            }
+
+            cache.CleanCache();
+
+            using (var db = GetContext()) {
+                var list = GetSuperColumnList(db, testKey);
+                var itemCount = list.Single().ToObjectDictionary<string, CassandraCache<string>.CacheItemColumn>()
+                    .Count(c => c.Key == "Item");
+                Assert.That(itemCount, Is.EqualTo(0));
+            }
+        }
+
+        #endregion CleanCache
+
         #region Set Tests
 
         [Test]
@@ -85,10 +162,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var item = list.Single().ToObjectDictionary<string, CassandraCache<string>.CacheItemColumn>()
                     .SingleOrDefault(c => c.Key == "Item").Value;
                 Assert.That(item, Is.Not.Null);
@@ -105,10 +179,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var item = list.Single().ToObjectDictionary<string, CassandraCache<DateTime>.CacheItemColumn>()
                     .SingleOrDefault(c => c.Key == "Item").Value;
                 Assert.That(item, Is.Not.Null);
@@ -125,10 +196,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var item = list.Single().ToObjectDictionary<string, CassandraCache<double>.CacheItemColumn>()
                     .SingleOrDefault(c => c.Key == "Item").Value;
                 Assert.That(item, Is.Not.Null);
@@ -152,10 +220,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var item = list.Single().ToObjectDictionary<string, CassandraCache<ClassWithPrimitives>.CacheItemColumn>()
                     .SingleOrDefault(c => c.Key == "Item").Value;
                 Assert.That(item, Is.Not.Null);
@@ -174,10 +239,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var item = list.Single().ToObjectDictionary<string, CassandraCache<string>.CacheItemColumn>()
                     .SingleOrDefault(c => c.Key == "Item").Value;
                 Assert.That(item, Is.Not.Null);
@@ -196,10 +258,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, "anything", new CacheItemPolicy { SlidingExpiration = testValue });
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var policy = list.Single().ToObjectDictionary<string, CassandraCache<string>.CacheItemPolicyColumn>()
                     .SingleOrDefault(c => c.Key == "Policy").Value;
                 Assert.That(policy, Is.Not.Null);
@@ -216,10 +275,7 @@ namespace Lucky.Cassandra.Test {
             cache.Set(testKey, "anything", new CacheItemPolicy { AbsoluteExpiration = testValue });
 
             using (var db = GetContext()) {
-                var list = db.SuperColumnList.Where(c => c.ColumnFamily == _ColumnFamily && c.Key == testKey);
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Any());
-                Assert.That(list.Count(), Is.EqualTo(1));
+                var list = GetSuperColumnList(db, testKey);
                 var policy = list.Single().ToObjectDictionary<string, CassandraCache<string>.CacheItemPolicyColumn>()
                     .SingleOrDefault(c => c.Key == "Policy").Value;
                 Assert.That(policy, Is.Not.Null);
@@ -233,8 +289,8 @@ namespace Lucky.Cassandra.Test {
 
         [Test]
         public void Get_String_ReturnsCachedValue() {
-            const string testKey = "SetString1";
-            var testValue = "TestString1";
+            const string testKey = "Get_String_ReturnsCachedValue";
+            const string testValue = "TestString1";
             var cache = new CassandraCache<string>(_KeySpace);
 
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
@@ -243,6 +299,102 @@ namespace Lucky.Cassandra.Test {
             Assert.That(value, Is.Not.Null);
             Assert.That(value, Is.TypeOf<string>());
             Assert.That(value as string, Is.EqualTo(testValue));
+        }
+
+        [Test]
+        public void Get_SlidingExpiredItemNeverAccessed_ReturnsNull() {
+            const string testKey = "Get_SlidingExpiredItemNeverAccessed_ReturnsNull";
+            InsertCacheItem(testKey, "TestString1",
+                                    slidingExpiration: TimeSpan.FromMinutes(5),
+                                    lastAccessed: DateTimeOffset.Now.AddMinutes(-6),
+                                    added: DateTimeOffset.Now.AddMinutes(-6)
+                );
+
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            var value = cache.Get(testKey);
+            Assert.That(value, Is.Null);
+        }
+
+        [Test]
+        public void Get_SlidingValidItemNeverAccessed_ReturnsItem() {
+            const string testKey = "Get_SlidingValidItemNeverAccessed_ReturnsItem";
+            const string testValue = "TestString1";
+            InsertCacheItem(testKey, testValue,
+                                    slidingExpiration: TimeSpan.FromMinutes(5),
+                                    lastAccessed: DateTimeOffset.Now.AddMinutes(-2),
+                                    added: DateTimeOffset.Now.AddMinutes(-2)
+                );
+
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            var value = cache.Get(testKey);
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value, Is.TypeOf<string>());
+            Assert.That(value, Is.EqualTo(testValue));
+        }
+
+        [Test]
+        public void Get_SlidingExpiredItem_ReturnsNull() {
+            const string testKey = "Get_SlidingExpiredItem_ReturnsNull";
+            InsertCacheItem(testKey, "TestString1",
+                                    slidingExpiration: TimeSpan.FromMinutes(5),
+                                    lastAccessed: DateTimeOffset.Now.AddMinutes(-6),
+                                    added: DateTimeOffset.Now.AddMinutes(-10)
+                );
+
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            var value = cache.Get(testKey);
+            Assert.That(value, Is.Null);
+        }
+
+        [Test]
+        public void Get_SlidingValidItemAccessedRecently_ReturnsItem() {
+            const string testKey = "Get_SlidingValidItemAccessedRecently_ReturnsItem";
+            const string testValue = "TestString1";
+            InsertCacheItem(testKey, testValue,
+                                    slidingExpiration: TimeSpan.FromMinutes(5),
+                                    lastAccessed: DateTimeOffset.Now.AddMinutes(-2),
+                                    added: DateTimeOffset.Now.AddMinutes(-10)
+                );
+
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            var value = cache.Get(testKey);
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value, Is.TypeOf<string>());
+            Assert.That(value, Is.EqualTo(testValue));
+        }
+
+        [Test]
+        public void Get_AbsoluteExpiredItem_ReturnsNull() {
+            const string testKey = "Get_AbsoluteExpiredItem_ReturnsNull";
+            const string testValue = "TestString1";
+            InsertCacheItem(testKey, testValue,
+                                    absoluteExpiration: DateTimeOffset.Now.AddMinutes(-2),
+                                    added: DateTimeOffset.Now.AddMinutes(-10)
+                );
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            var value = cache.Get(testKey);
+            Assert.That(value, Is.Null);
+        }
+
+        [Test]
+        public void Get_AbsoluteValidItem_ReturnsItem() {
+            const string testKey = "Get_AbsoluteExpiredItem_ReturnsNull";
+            const string testValue = "TestString1";
+            InsertCacheItem(testKey, testValue,
+                                    absoluteExpiration: DateTimeOffset.Now.AddMinutes(2),
+                                    added: DateTimeOffset.Now.AddMinutes(-10)
+                );
+            var cache = new CassandraCache<string>(_KeySpace);
+
+            var value = cache.Get(testKey);
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value, Is.TypeOf<string>());
+            Assert.That(value, Is.EqualTo(testValue));
         }
 
         #endregion Get Tests

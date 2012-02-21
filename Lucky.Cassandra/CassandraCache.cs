@@ -33,8 +33,10 @@ namespace Lucky.Cassandra {
                     // todo: keep recently created cache items 
                     // but omg! how?!
                 } else {
-                    db.Column.DeleteOnSubmit(c => c.ColumnFamily == familyName);
-                    db.SubmitChanges();
+                    var spec = db.DescribeKeySpace(_keyspace);
+                    var familySpec = spec.Cf_defs.Single(cf => cf.Name == familyName);
+                    db.SystemDropColumnFamily(familyName);
+                    db.SystemAddColumnFamily(familySpec);
                 }
             }
         }
