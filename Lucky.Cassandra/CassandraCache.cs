@@ -165,7 +165,17 @@ namespace Lucky.Cassandra {
                 AbsoluteExpiration = policy.AbsoluteExpiration
             };
 
+            if (policy.ChangeMonitors.Any()) {
+                foreach (var monitor in policy.ChangeMonitors) {
+                    monitor.NotifyOnChanged(state => Remove(item.Key, familyName));
+                }
+            }
+
             Set(item.Key, familyName, itemColumn, policyColumn);
+        }
+
+        private void OnChangedCallback(object state) {
+            throw new NotImplementedException();
         }
 
         private void Set(string key, string familyName, CacheItemColumn item, CacheItemPolicyColumn policy) {

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Mime;
+using System.Reflection;
 using System.Runtime.Caching;
 using System.Threading;
 using Apache.Cassandra;
@@ -127,7 +130,7 @@ namespace Lucky.Cassandra.Test {
         [Test]
         public void CleanCache_NoParams_DeletesItAll() {
             const string testKey = "SetString1";
-            var testValue = "TestString1";
+            const string testValue = "TestString1";
             var cache = new CassandraCache<string>(_KeySpace);
 
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
@@ -156,7 +159,7 @@ namespace Lucky.Cassandra.Test {
         [Test]
         public void Set_String_SavesValue() {
             const string testKey = "SetString1";
-            var testValue = "TestString1";
+            const string testValue = "TestString1";
             var cache = new CassandraCache<string>(_KeySpace);
 
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
@@ -190,7 +193,7 @@ namespace Lucky.Cassandra.Test {
         [Test]
         public void Set_Double_SavesValue() {
             const string testKey = "SetDouble1";
-            var testValue = double.MaxValue;
+            const double testValue = double.MaxValue;
             var cache = new CassandraCache<double>(_KeySpace);
 
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
@@ -233,7 +236,7 @@ namespace Lucky.Cassandra.Test {
         [Test]
         public void Set_AddedDateTimeOffset_IsSet() {
             const string testKey = "SetString1";
-            var testValue = "TestString1";
+            const string testValue = "TestString1";
             var cache = new CassandraCache<string>(_KeySpace);
 
             cache.Set(testKey, testValue, DateTimeOffset.Now.AddMinutes(1));
@@ -396,6 +399,65 @@ namespace Lucky.Cassandra.Test {
             Assert.That(value, Is.TypeOf<string>());
             Assert.That(value, Is.EqualTo(testValue));
         }
+
+        private readonly List<string> filePaths = new List<string>();
+        private void CreateTestFiles() {
+            var path = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+            //throw new Exception(dir);
+            for (int i = 1; i < 4; i++) {
+                var newPath = Path.Combine(path, "TestFile" + i);
+                filePaths.Add(newPath);
+                using (FileStream fs = File.Create(newPath)) {
+                    for (byte b = 0; b < 100; b++) {
+                        fs.WriteByte(b);
+                    }
+                }
+            }
+        }
+
+        private void TouchFile(int index) {
+            using (FileStream fs = File.Create(filePaths[index])) {
+                for (byte b = 100; b < 200; b++) {
+                    fs.WriteByte(b);
+                }
+            }
+        }
+
+        [Test]
+        public void Get_SingleChangeMonitor_EvictsItem() {
+            const string testKey = "SetString1";
+            const string testValue = "TestString1";
+            var cache = new CassandraCache<string>(_KeySpace);
+            CreateTestFiles();
+            var policy = new CacheItemPolicy();
+            var paths = new List<string> { filePaths[0] };
+            policy.ChangeMonitors.Add(new HostFileChangeMonitor(paths));
+
+            cache.Set(testKey, testValue, policy);
+            var value = cache.Get(testKey);
+
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value, Is.TypeOf<string>());
+            Assert.That(value, Is.EqualTo(testValue));
+
+            TouchFile(0);
+
+            Thread.Sleep(300); // give it time to update and execute callback
+
+            value = cache.Get(testKey);
+
+            Assert.That(value, Is.Null);
+
+        }
+
+        [Test]
+        public void Get_MultipleChangeMonitor_EvictsItem() { }
+
+        [Test]
+        public void Get_SingleChangeMonitor_EvictsProperItem() { }
+
+        [Test]
+        public void Get_MultipleChangeMonitor_EvictsMultipleItems() { }
 
         #endregion Get Tests
     }
