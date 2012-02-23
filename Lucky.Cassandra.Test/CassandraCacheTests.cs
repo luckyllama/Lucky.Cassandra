@@ -415,7 +415,7 @@ namespace Lucky.Cassandra.Test {
             }
         }
 
-        private void TouchFile(int index) {
+        private void ModifyFile(int index) {
             using (FileStream fs = File.Create(filePaths[index])) {
                 for (byte b = 100; b < 200; b++) {
                     fs.WriteByte(b);
@@ -423,41 +423,162 @@ namespace Lucky.Cassandra.Test {
             }
         }
 
-        [Test]
-        public void Get_SingleChangeMonitor_EvictsItem() {
-            const string testKey = "SetString1";
-            const string testValue = "TestString1";
-            var cache = new CassandraCache<string>(_KeySpace);
-            CreateTestFiles();
-            var policy = new CacheItemPolicy();
-            var paths = new List<string> { filePaths[0] };
-            policy.ChangeMonitors.Add(new HostFileChangeMonitor(paths));
-
-            cache.Set(testKey, testValue, policy);
-            var value = cache.Get(testKey);
-
-            Assert.That(value, Is.Not.Null);
-            Assert.That(value, Is.TypeOf<string>());
-            Assert.That(value, Is.EqualTo(testValue));
-
-            TouchFile(0);
-
-            Thread.Sleep(300); // give it time to update and execute callback
-
-            value = cache.Get(testKey);
-
-            Assert.That(value, Is.Null);
-
+        private void DestroyTestFiles() {
+            foreach (var path in filePaths.Where(File.Exists)) {
+                File.Delete(path);
+            }
         }
 
         [Test]
-        public void Get_MultipleChangeMonitor_EvictsItem() { }
+        public void Get_SingleChangeMonitor_EvictsItem() {
+            const string testKey = "Get_SingleChangeMonitor_EvictsItem";
+            const string testValue = "TestString1";
+            var cache = new CassandraCache<string>(_KeySpace);
+            try {
+                CreateTestFiles();
+                var policy = new CacheItemPolicy();
+                var paths = new List<string> { filePaths[0] };
+                policy.ChangeMonitors.Add(new HostFileChangeMonitor(paths));
+
+                cache.Set(testKey, testValue, policy);
+                var value = cache.Get(testKey);
+
+                Assert.That(value, Is.Not.Null);
+                Assert.That(value, Is.TypeOf<string>());
+                Assert.That(value, Is.EqualTo(testValue));
+
+                ModifyFile(0);
+
+                Thread.Sleep(300); // give it time to update and execute callback
+
+                value = cache.Get(testKey);
+
+                Assert.That(value, Is.Null);
+            } finally {
+                DestroyTestFiles();
+            }
+        }
 
         [Test]
-        public void Get_SingleChangeMonitor_EvictsProperItem() { }
+        public void Get_MultipleChangeMonitor_EvictsItem() {
+            const string testKey = "Get_MultipleChangeMonitor_EvictsItem";
+            const string testValue = "TestString1";
+            var cache = new CassandraCache<string>(_KeySpace);
+            try {
+                CreateTestFiles();
+                var policy = new CacheItemPolicy();
+                var paths = new List<string> { filePaths[0], filePaths[1], filePaths[2] };
+                policy.ChangeMonitors.Add(new HostFileChangeMonitor(paths));
+
+                cache.Set(testKey, testValue, policy);
+                var value = cache.Get(testKey);
+
+                Assert.That(value, Is.Not.Null);
+                Assert.That(value, Is.TypeOf<string>());
+                Assert.That(value, Is.EqualTo(testValue));
+
+                ModifyFile(2);
+
+                Thread.Sleep(300); // give it time to update and execute callback
+
+                value = cache.Get(testKey);
+
+                Assert.That(value, Is.Null);
+            } finally {
+                DestroyTestFiles();
+            }
+        }
 
         [Test]
-        public void Get_MultipleChangeMonitor_EvictsMultipleItems() { }
+        public void Get_SingleChangeMonitor_EvictsProperItem() {
+            const string testKey1 = "Get_SingleChangeMonitor_EvictsProperItem1";
+            const string testKey2 = "Get_SingleChangeMonitor_EvictsProperItem2";
+            const string testValue = "TestString1";
+            var cache = new CassandraCache<string>(_KeySpace);
+            try {
+                CreateTestFiles();
+                var policy1 = new CacheItemPolicy();
+                var paths1 = new List<string> { filePaths[1] };
+                policy1.ChangeMonitors.Add(new HostFileChangeMonitor(paths1));
+
+                cache.Set(testKey1, testValue, policy1);
+                var value1 = cache.Get(testKey1);
+
+                Assert.That(value1, Is.Not.Null);
+                Assert.That(value1, Is.TypeOf<string>());
+                Assert.That(value1, Is.EqualTo(testValue));
+
+                var policy2 = new CacheItemPolicy();
+                var paths2 = new List<string> { filePaths[2] };
+                policy2.ChangeMonitors.Add(new HostFileChangeMonitor(paths2));
+
+                cache.Set(testKey2, testValue, policy2);
+                var value2 = cache.Get(testKey1);
+
+                Assert.That(value2, Is.Not.Null);
+                Assert.That(value2, Is.TypeOf<string>());
+                Assert.That(value2, Is.EqualTo(testValue));
+
+                ModifyFile(2);
+
+                Thread.Sleep(300); // give it time to update and execute callback
+
+                value1 = cache.Get(testKey1);
+                value2 = cache.Get(testKey2);
+
+                Assert.That(value1, Is.Not.Null);
+                Assert.That(value1, Is.TypeOf<string>());
+                Assert.That(value1, Is.EqualTo(testValue));
+                Assert.That(value2, Is.Null);
+            } finally {
+                DestroyTestFiles();
+            }
+        }
+
+        [Test]
+        public void Get_MultipleChangeMonitor_EvictsMultipleItems() {
+            const string testKey1 = "Get_SingleChangeMonitor_EvictsProperItem1";
+            const string testKey2 = "Get_SingleChangeMonitor_EvictsProperItem2";
+            const string testValue = "TestString1";
+            var cache = new CassandraCache<string>(_KeySpace);
+            try {
+                CreateTestFiles();
+                var policy1 = new CacheItemPolicy();
+                var paths1 = new List<string> { filePaths[1] };
+                policy1.ChangeMonitors.Add(new HostFileChangeMonitor(paths1));
+
+                cache.Set(testKey1, testValue, policy1);
+                var value1 = cache.Get(testKey1);
+
+                Assert.That(value1, Is.Not.Null);
+                Assert.That(value1, Is.TypeOf<string>());
+                Assert.That(value1, Is.EqualTo(testValue));
+
+                var policy2 = new CacheItemPolicy();
+                var paths2 = new List<string> { filePaths[2] };
+                policy2.ChangeMonitors.Add(new HostFileChangeMonitor(paths2));
+
+                cache.Set(testKey2, testValue, policy2);
+                var value2 = cache.Get(testKey1);
+
+                Assert.That(value2, Is.Not.Null);
+                Assert.That(value2, Is.TypeOf<string>());
+                Assert.That(value2, Is.EqualTo(testValue));
+
+                ModifyFile(1);
+                ModifyFile(2);
+
+                Thread.Sleep(300); // give it time to update and execute callback
+
+                value1 = cache.Get(testKey1);
+                value2 = cache.Get(testKey2);
+
+                Assert.That(value1, Is.Null);
+                Assert.That(value2, Is.Null);
+            } finally {
+                DestroyTestFiles();
+            }
+        }
 
         #endregion Get Tests
     }
