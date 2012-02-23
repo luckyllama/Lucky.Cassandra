@@ -54,6 +54,7 @@ namespace Lucky.Cassandra {
                 return DefaultCacheCapabilities.OutOfProcessProvider
                        | DefaultCacheCapabilities.AbsoluteExpirations
                        | DefaultCacheCapabilities.SlidingExpirations
+                       | DefaultCacheCapabilities.CacheEntryChangeMonitors
                        | DefaultCacheCapabilities.CacheRegions;
             }
         }

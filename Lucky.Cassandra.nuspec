@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Lucky.Cassandra</id>
-    <version>0.9.2</version>
+    <version>0.10.0</version>
     <authors>frank hadder</authors>
     <owners>frank hadder</owners>
     <description>An implementation of .net 4.0's ObjectCache that saves to an instance of a Cassandra Db.</description>
@@ -14,7 +14,7 @@
       <dependency id="Cassandraemon" version="1.0.6" />
     </dependencies>
     <releaseNotes>
-      Fixed an issue with the helper method CleanCache
+      Added change monitoring policy feature.
     </releaseNotes>
   </metadata>
   <files>
